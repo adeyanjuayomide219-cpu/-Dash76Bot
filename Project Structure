@@ -1,0 +1,7 @@
+Dash76Bot/
+├── main.py
+├── requirements.txt
+├── Procfile
+├── .gitignore
+├── .env.example
+└── README.md
