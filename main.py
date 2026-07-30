@@ -53,7 +53,6 @@ async def generate_image(prompt: str) -> bytes:
                 if resp.status == 200:
                     return await resp.read()
                 elif resp.status == 503:
-                    # Model is loading, wait and retry
                     await asyncio.sleep(5)
                     async with session.post(API_URL, headers=headers, json={"inputs": prompt}, timeout=60) as retry_resp:
                         if retry_resp.status == 200:
@@ -83,11 +82,9 @@ async def convert_image(image_data: bytes, target_format: str) -> bytes:
         
         img_format = format_map.get(target_format.lower(), "PNG")
         
-        # Convert RGBA to RGB for JPEG
         if img_format == "JPEG" and img.mode == "RGBA":
             img = img.convert("RGB")
         
-        # Handle transparency for non-supporting formats
         if img_format != "PNG" and img.mode == "RGBA":
             background = Image.new("RGB", img.size, (255, 255, 255))
             background.paste(img, mask=img.split()[3])
@@ -131,7 +128,6 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         "*Commands:*\n"
         "/start - Show main menu\n"
         "/help - Show this help\n"
-        "/convert - Convert an image\n"
         "/generate - Generate an image from text\n"
         "/shorten - Shorten a URL\n"
         "/cancel - Cancel current operation\n\n"
@@ -350,20 +346,25 @@ def main():
     """Start the bot"""
     logger.info("Starting Dash76Bot...")
     
+    # Create application - simplified for newer version
     application = Application.builder().token(BOT_TOKEN).build()
     
+    # Add command handlers
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("help", help_command))
     application.add_handler(CommandHandler("cancel", cancel))
     application.add_handler(CommandHandler("generate", handle_message))
     application.add_handler(CommandHandler("shorten", handle_message))
     
+    # Add callback and message handlers
     application.add_handler(CallbackQueryHandler(handle_button))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     application.add_handler(MessageHandler(filters.PHOTO | filters.Document.IMAGE, handle_message))
     
+    # Add error handler
     application.add_error_handler(error_handler)
     
+    # Start bot with polling
     logger.info("Bot started successfully!")
     application.run_polling(allowed_updates=Update.ALL_TYPES)
 
